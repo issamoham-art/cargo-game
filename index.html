@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CARGO</title>
+<style>
+  :root {
+    --navy: #0a1628; --navy2: #12203a; --navy3: #1a2d4d;
+    --gold: #d4a843; --gold-dim: #a68535; --white: #e8e4dc;
+    --gray: #7a8699; --red: #c0392b; --blue: #2980b9;
+    --green: #27ae60; --yellow: #f1c40f; --success: #2ecc71; --danger: #e74c3c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--navy); color:var(--white); min-height:100vh; }
+  .screen { display:none; min-height:100vh; padding:20px; }
+  .screen.active { display:flex; flex-direction:column; align-items:center; }
+
+  /* Landing */
+  #landing { justify-content:center; text-align:center; }
+  .logo { font-size:4rem; font-weight:900; letter-spacing:0.3em; color:var(--gold); margin-bottom:8px; }
+  .subtitle { color:var(--gray); font-size:1rem; margin-bottom:50px; letter-spacing:0.1em; }
+  .btn-group { display:flex; flex-direction:column; gap:16px; width:100%; max-width:340px; }
+
+  .btn { padding:16px 32px; border:none; border-radius:8px; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; letter-spacing:0.05em; }
+  .btn-primary { background:var(--gold); color:var(--navy); }
+  .btn-primary:hover { background:#e8bc55; transform:translateY(-1px); }
+  .btn-secondary { background:var(--navy3); color:var(--white); border:1px solid var(--navy3); }
+  .btn-secondary:hover { border-color:var(--gold); }
+  .btn-small { padding:10px 20px; font-size:0.85rem; }
+  .btn-danger { background:var(--danger); color:white; }
+  .btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+  /* Form */
+  .form-box { background:var(--navy2); border-radius:12px; padding:40px; width:100%; max-width:400px; border:1px solid var(--navy3); }
+  .form-box h2 { color:var(--gold); margin-bottom:24px; font-size:1.3rem; }
+  .form-box input { width:100%; padding:14px 16px; border-radius:8px; border:1px solid var(--navy3); background:var(--navy); color:var(--white); font-size:1rem; margin-bottom:16px; outline:none; }
+  .form-box input:focus { border-color:var(--gold); }
+  .form-box input::placeholder { color:var(--gray); }
+  .error-msg { color:var(--danger); font-size:0.85rem; margin-bottom:12px; min-height:20px; }
+
+  /* Lobby */
+  #lobby { padding-top:60px; }
+  .room-code-display { background:var(--navy2); border:2px dashed var(--gold); border-radius:12px; padding:20px 40px; text-align:center; margin-bottom:30px; }
+  .room-code-display .label { color:var(--gray); font-size:0.85rem; margin-bottom:8px; }
+  .room-code-display .code { font-size:2.5rem; font-weight:900; letter-spacing:0.4em; color:var(--gold); }
+  .player-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; width:100%; max-width:700px; margin-bottom:30px; }
+  .player-slot { background:var(--navy2); border:1px solid var(--navy3); border-radius:8px; padding:16px; text-align:center; min-height:60px; display:flex; align-items:center; justify-content:center; font-size:0.95rem; }
+  .player-slot.filled { border-color:var(--gold); color:var(--gold); }
+  .player-slot.empty { color:var(--gray); border-style:dashed; }
+  .player-count { color:var(--gray); margin-bottom:20px; font-size:0.9rem; }
+
+  /* Game */
+  #game { padding:10px; }
+  .game-header { width:100%; max-width:1100px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .round-badge { background:var(--gold); color:var(--navy); padding:6px 18px; border-radius:20px; font-weight:700; font-size:0.9rem; }
+  .round-title { font-size:1.1rem; color:var(--white); flex:1; text-align:center; }
+
+  .game-body { width:100%; max-width:1100px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:768px) { .game-body { grid-template-columns:1fr; } }
+
+  .panel { background:var(--navy2); border-radius:12px; padding:20px; border:1px solid var(--navy3); }
+  .panel-title { font-size:0.8rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--gray); margin-bottom:14px; font-weight:600; }
+
+  /* Ship Bar */
+  .ship-bar-wrap { width:100%; max-width:1100px; margin-bottom:16px; }
+  .ship-label { display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.8rem; color:var(--gray); }
+  .ship-bar { width:100%; height:32px; background:var(--navy2); border-radius:8px; overflow:hidden; border:1px solid var(--navy3); position:relative; }
+  .ship-fill { height:100%; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); border-radius:8px; transition:width 0.8s ease; }
+  .ship-fill.over { background:linear-gradient(90deg,var(--danger),#c0392b); }
+  .ship-fill-text { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:0.75rem; font-weight:700; color:var(--navy); }
+
+  /* Crates */
+  .crate-list { display:flex; flex-direction:column; gap:10px; }
+  .crate-card { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--navy); border-radius:8px; border:1px solid var(--navy3); cursor:pointer; transition:all 0.2s; }
+  .crate-card:hover { border-color:var(--gold); }
+  .crate-card.selected { border-color:var(--gold); background:rgba(212,168,67,0.08); }
+  .crate-card.loaded { border-color:var(--success); background:rgba(46,204,113,0.08); }
+  .crate-card.bumped { border-color:var(--danger); background:rgba(231,76,60,0.08); opacity:0.7; }
+  .crate-card.nested { border-color:#9b59b6; background:rgba(155,89,182,0.08); }
+
+  .crate-color { width:28px; height:28px; border-radius:6px; flex-shrink:0; }
+  .crate-color.red { background:var(--red); }
+  .crate-color.blue { background:var(--blue); }
+  .crate-color.green { background:var(--green); }
+  .crate-color.gold { background:var(--yellow); }
+
+  .crate-info { flex:1; }
+  .crate-info .size { font-weight:600; font-size:0.95rem; }
+  .crate-info .value { color:var(--gold); font-size:0.8rem; }
+  .crate-info .owner { color:var(--gray); font-size:0.75rem; }
+  .crate-priority { width:28px; height:28px; border-radius:50%; background:var(--gold); color:var(--navy); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; }
+
+  .crate-status { font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; padding:3px 8px; border-radius:4px; }
+  .crate-status.loaded { background:rgba(46,204,113,0.2); color:var(--success); }
+  .crate-status.bumped { background:rgba(231,76,60,0.2); color:var(--danger); }
+
+  /* Chat */
+  .chat-messages { height:220px; overflow-y:auto; margin-bottom:10px; padding:8px; background:var(--navy); border-radius:8px; font-size:0.85rem; }
+  .chat-msg { margin-bottom:6px; line-height:1.4; }
+  .chat-msg .sender { color:var(--gold); font-weight:600; }
+  .chat-msg .text { color:var(--white); }
+  .chat-input-row { display:flex; gap:8px; }
+  .chat-input-row input { flex:1; padding:10px 14px; border-radius:8px; border:1px solid var(--navy3); background:var(--navy); color:var(--white); font-size:0.85rem; outline:none; }
+  .chat-input-row input:focus { border-color:var(--gold); }
+
+  /* Nesting */
+  .nest-pair { display:flex; align-items:center; gap:10px; padding:10px; background:var(--navy); border-radius:8px; margin-bottom:8px; border:1px solid var(--navy3); flex-wrap:wrap; }
+  .nest-pair .plus { color:var(--gold); font-weight:700; font-size:1.2rem; }
+  .nest-pair .arrow { color:var(--gray); }
+  .nest-pair .saved { color:var(--success); font-size:0.8rem; font-weight:600; }
+  .nest-mini-crate { display:flex; align-items:center; gap:6px; padding:4px 10px; background:var(--navy2); border-radius:6px; font-size:0.8rem; }
+  .nest-mini-color { width:14px; height:14px; border-radius:4px; }
+
+  .proposal-card { background:var(--navy2); border:2px solid var(--gold); border-radius:12px; padding:20px; margin-bottom:12px; animation:slideIn 0.3s ease; }
+  @keyframes slideIn { from { transform:translateY(-10px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  .proposal-card h4 { color:var(--gold); margin-bottom:10px; }
+  .proposal-actions { display:flex; gap:10px; margin-top:12px; }
+
+  /* Scores */
+  .score-table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+  .score-table th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--navy3); color:var(--gold); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.1em; }
+  .score-table td { padding:10px 12px; border-bottom:1px solid var(--navy3); }
+  .score-table tr.highlight { background:rgba(212,168,67,0.08); }
+
+  /* Facilitator bar */
+  .facil-bar { position:fixed; bottom:0; left:0; right:0; background:var(--navy2); border-top:2px solid var(--gold); padding:12px 24px; display:none; align-items:center; justify-content:space-between; z-index:100; flex-wrap:wrap; gap:10px; }
+  body.is-facilitator .facil-bar { display:flex; }
+  body.is-facilitator #game { padding-bottom:80px; }
+
+  .full-panel { grid-column:1 / -1; }
+  .round-instruction { width:100%; max-width:1100px; background:var(--navy2); border-left:4px solid var(--gold); padding:14px 20px; border-radius:0 8px 8px 0; margin-bottom:16px; font-size:0.9rem; line-height:1.5; }
+
+  .waiting { display:inline-flex; align-items:center; gap:8px; color:var(--gray); font-size:0.85rem; padding:12px 0; }
+  .waiting .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); animation:pulse 1.4s infinite; }
+  .waiting .dot:nth-child(2) { animation-delay:0.2s; }
+  .waiting .dot:nth-child(3) { animation-delay:0.4s; }
+  @keyframes pulse { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
+
+  .text-center{text-align:center} .text-gold{color:var(--gold)} .text-gray{color:var(--gray)}
+  .text-sm{font-size:0.85rem} .text-xs{font-size:0.75rem} .mt-10{margin-top:10px} .mt-20{margin-top:20px} .mb-10{margin-bottom:10px}
+
+  /* Config banner */
+  .config-banner { background:#2d1a00; border:1px solid var(--gold); border-radius:8px; padding:16px 20px; margin-bottom:20px; max-width:400px; width:100%; }
+  .config-banner p { font-size:0.8rem; color:var(--gray); line-height:1.5; margin-top:8px; }
+
+  /* Chat Tabs (Group / DM) */
+  .chat-tabs { display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; }
+  .chat-tab { padding:6px 12px; border-radius:6px; background:var(--navy); border:1px solid var(--navy3); cursor:pointer; font-size:0.75rem; color:var(--gray); transition:all 0.2s; position:relative; white-space:nowrap; }
+  .chat-tab:hover { border-color:var(--gold); color:var(--white); }
+  .chat-tab.active { background:var(--gold); color:var(--navy); border-color:var(--gold); font-weight:700; }
+  .chat-tab .unread { position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; font-size:0.6rem; font-weight:700; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+
+  /* Marketplace */
+  .marketplace { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+  .market-card { background:var(--navy); border:1px solid var(--navy3); border-radius:8px; padding:10px 12px; cursor:pointer; transition:all 0.2s; }
+  .market-card:hover { border-color:var(--gold); }
+  .market-card .player-name { color:var(--gold); font-size:0.85rem; font-weight:600; margin-bottom:6px; }
+  .market-card .dm-btn { display:inline-block; margin-top:6px; padding:3px 10px; background:var(--navy2); border:1px solid var(--gold); border-radius:4px; font-size:0.7rem; color:var(--gold); cursor:pointer; }
+  .market-card .dm-btn:hover { background:var(--gold); color:var(--navy); }
+  .dm-label { font-size:0.7rem; color:var(--gray); font-style:italic; margin-bottom:4px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════ FIREBASE CONFIG SCREEN ═══════ -->
+<div id="configScreen" class="screen active">
+  <div style="margin-top:60px; text-align:center;">
+    <div class="logo" style="font-size:3rem;">CARGO</div>
+    <div class="subtitle">FIREBASE SETUP</div>
+  </div>
+  <div class="form-box">
+    <h2>Connect to Firebase</h2>
+    <p class="text-sm text-gray" style="margin-bottom:16px; line-height:1.5;">
+      Paste your Firebase Realtime Database URL below.<br>
+      (See the setup guide for how to get this.)
+    </p>
+    <input id="firebaseUrl" type="text" placeholder="https://your-project.firebaseio.com" autocomplete="off">
+    <div id="configError" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="connectFirebase()" style="width:100%">Connect</button>
+    <p class="text-xs text-gray mt-10">Your URL is saved in this browser for next time.</p>
+  </div>
+</div>
+
+<!-- ═══════ LANDING ═══════ -->
+<div id="landing" class="screen">
+  <div class="logo">CARGO</div>
+  <div class="subtitle">A SHIPPING GAME</div>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="createRoom()">Create Room (Facilitator)</button>
+    <button class="btn btn-secondary" onclick="showScreen('join')">Join Room (Player)</button>
+  </div>
+</div>
+
+<!-- ═══════ JOIN ═══════ -->
+<div id="join" class="screen" style="justify-content:center; text-align:center;">
+  <div class="form-box">
+    <h2>Board the Ship</h2>
+    <input id="playerName" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
+    <input id="roomCode" type="text" placeholder="Room code (e.g. 7X3K)" maxlength="4" autocomplete="off"
+           style="text-transform:uppercase; letter-spacing:0.3em; text-align:center;">
+    <div id="joinError" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="joinRoom()" style="width:100%">Join</button>
+  </div>
+</div>
+
+<!-- ═══════ LOBBY ═══════ -->
+<div id="lobby" class="screen">
+  <div class="room-code-display">
+    <div class="label">ROOM CODE</div>
+    <div class="code" id="lobbyCode">----</div>
+  </div>
+  <div class="player-count" id="playerCount">0 / 8 shippers connected</div>
+  <div class="player-grid" id="playerGrid"></div>
+  <button id="startBtn" class="btn btn-primary" onclick="startGame()" style="display:none;">Launch Round 1</button>
+  <div id="lobbyWait" class="waiting">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span>Waiting for the captain to start...</span>
+  </div>
+</div>
+
+<!-- ═══════ GAME ═══════ -->
+<div id="game" class="screen">
+  <div class="game-header">
+    <span class="round-badge" id="roundBadge">ROUND 1</span>
+    <span class="round-title" id="roundTitle">Solo Loading</span>
+    <span class="text-sm text-gray" id="submissionStatus"></span>
+  </div>
+  <div class="round-instruction" id="roundInstruction"></div>
+  <div class="ship-bar-wrap">
+    <div class="ship-label"><span>MV Prosperity</span><span id="shipStats">0 / 85 units</span></div>
+    <div class="ship-bar"><div class="ship-fill" id="shipFill" style="width:0%"><span class="ship-fill-text" id="shipFillText"></span></div></div>
+  </div>
+  <div class="game-body" id="gameBody"></div>
+</div>
+
+<!-- ═══════ FACILITATOR BAR ═══════ -->
+<div class="facil-bar">
+  <div id="facilInfo" style="color:var(--gray); font-size:0.85rem;">Facilitator Controls</div>
+  <div id="facilActions" style="display:flex; gap:10px;"></div>
+</div>
+
+<!-- Firebase SDK (compat mode for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CARGO — Firebase Single-File Version
+// ══════════════════════════════════════════════════════════
+
+const SHIP_CAPACITY = 85;
+const MAX_PLAYERS = 8;
+
+// Crate definitions for 8 players
+const CRATE_DEFS = [
+  [{size:5,value:35,color:'red'},{size:4,value:25,color:'blue'},{size:7,value:15,color:'green'}],
+  [{size:3,value:40,color:'blue'},{size:6,value:20,color:'green'},{size:5,value:30,color:'gold'}],
+  [{size:7,value:20,color:'red'},{size:4,value:35,color:'green'},{size:3,value:25,color:'gold'}],
+  [{size:3,value:30,color:'red'},{size:7,value:15,color:'blue'},{size:6,value:40,color:'gold'}],
+  [{size:5,value:25,color:'blue'},{size:3,value:45,color:'green'},{size:7,value:20,color:'gold'}],
+  [{size:6,value:25,color:'red'},{size:3,value:35,color:'blue'},{size:5,value:30,color:'green'}],
+  [{size:4,value:40,color:'red'},{size:7,value:15,color:'green'},{size:5,value:25,color:'gold'}],
+  [{size:6,value:20,color:'blue'},{size:8,value:30,color:'red'},{size:4,value:35,color:'gold'}]
+];
+
+let db = null;
+let roomRef = null;
+let roomCode = '';
+let myRole = null;      // 'facilitator' | 'player'
+let myId = '';
+let myName = '';
+let myIndex = -1;
+let myCrates = [];
+let allCratesCache = [];
+let otherCrates = [];
+let playerNamesCache = {};
+let currentPhase = '';
+let selectedPriorities = [];
+let acceptedNestsCache = [];
+let listeners = [];
+let chatMode = 'group'; // 'group' or a player ID for DM
+let dmMessages = {};    // { channelId: [msgs] }
+let unreadDMs = {};     // { playerId: count }
+let playerIdMap = {};   // { index: playerId, playerId: index }
+
+// ── Firebase Connection ────────────────────────────────────
+function connectFirebase() {
+  const url = document.getElementById('firebaseUrl').value.trim();
+  const err = document.getElementById('configError');
+  if (!url || !url.includes('firebaseio.com') && !url.includes('firebasedatabase.app')) {
+    err.textContent = 'Enter a valid Firebase Realtime Database URL';
+    return;
+  }
+  try {
+    // Extract project ID from URL
+    const match = url.match(/https:\/\/([^.]+)/);
+    const projectId = match ? match[1] : 'cargo-game';
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp({ databaseURL: url });
+    }
+    db = firebase.database();
+
+    // Test connection
+    db.ref('.info/connected').once('value').then(() => {
+      localStorage.setItem('cargo-firebase-url', url);
+      showScreen('landing');
+    }).catch(e => {
+      err.textContent = 'Could not connect. Check URL and Firebase rules.';
+    });
+
+    // Also try immediately
+    localStorage.setItem('cargo-firebase-url', url);
+    showScreen('landing');
+  } catch (e) {
+    err.textContent = 'Connection error: ' + e.message;
+  }
+}
+
+// Auto-load saved URL
+(function() {
+  const saved = localStorage.getItem('cargo-firebase-url');
+  if (saved) {
+    document.getElementById('firebaseUrl').value = saved;
+  }
+})();
+
+// ── Utilities ──────────────────────────────────────────────
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function generateId() {
+  return 'u_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div'); d.textContent = text; return d.innerHTML;
+}
+
+function buildCrates(playerIndex) {
+  return CRATE_DEFS[playerIndex].map((c, i) => ({
+    id: 'P' + playerIndex + '-' + i,
+    size: c.size, value: c.value, color: c.color,
+    ownerIndex: playerIndex
+  }));
+}
+
+// ── Create Room ────────────────────────────────────────────
+function createRoom() {
+  if (!db) { alert('Connect to Firebase first'); return; }
+  roomCode = generateCode();
+  myId = generateId();
+  myRole = 'facilitator';
+  document.body.classList.add('is-facilitator');
+
+  roomRef = db.ref('rooms/' + roomCode);
+  roomRef.set({
+    code: roomCode,
+    facilitatorId: myId,
+    phase: 'lobby',
+    players: {},
+    createdAt: Date.now()
+  }).then(() => {
+    // Set presence — clean up room on disconnect
+    roomRef.onDisconnect().remove();
+    document.getElementById('lobbyCode').textContent = roomCode;
+    document.getElementById('startBtn').style.display = 'inline-block';
+    document.getElementById('lobbyWait').style.display = 'none';
+    showScreen('lobby');
+    listenLobby();
+    listenGame();
+  });
+}
+
+// ── Join Room ──────────────────────────────────────────────
+function joinRoom() {
+  if (!db) { alert('Connect to Firebase first'); return; }
+  myName = document.getElementById('playerName').value.trim();
+  roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+  const err = document.getElementById('joinError');
+
+  if (!myName) { err.textContent = 'Enter your name'; return; }
+  if (!roomCode || roomCode.length < 4) { err.textContent = 'Enter the 4-character room code'; return; }
+
+  myId = generateId();
+  myRole = 'player';
+  roomRef = db.ref('rooms/' + roomCode);
+
+  roomRef.once('value').then(snap => {
+    if (!snap.exists()) { err.textContent = 'Room not found. Check the code.'; return; }
+    const room = snap.val();
+    if (room.phase !== 'lobby') { err.textContent = 'Game already in progress.'; return; }
+
+    const players = room.players || {};
+    const playerList = Object.values(players);
+    if (playerList.length >= MAX_PLAYERS) { err.textContent = 'Room is full (8 players max).'; return; }
+    if (playerList.find(p => p.name === myName)) { err.textContent = 'Name already taken.'; return; }
+
+    myIndex = playerList.length;
+    myCrates = buildCrates(myIndex);
+
+    // Write player data
+    roomRef.child('players/' + myId).set({
+      id: myId, name: myName, index: myIndex, connected: true,
+      crates: myCrates
+    }).then(() => {
+      // Clean up on disconnect
+      roomRef.child('players/' + myId + '/connected').onDisconnect().set(false);
+      document.getElementById('lobbyCode').textContent = roomCode;
+      showScreen('lobby');
+      listenLobby();
+      listenGame();
+    });
+  });
+}
+
+document.getElementById('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+document.getElementById('playerName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('roomCode').focus(); });
+
+// ── Lobby Listener ─────────────────────────────────────────
+function listenLobby() {
+  const ref = roomRef.child('players');
+  ref.on('value', snap => {
+    const players = snap.val() || {};
+    const list = Object.values(players);
+    const grid = document.getElementById('playerGrid');
+    grid.innerHTML = '';
+
+    playerNamesCache = {};
+    list.forEach(p => { playerNamesCache[p.index] = p.name; playerNamesCache[p.id] = p.name; });
+
+    for (let i = 0; i < 8; i++) {
+      const p = list[i];
+      const div = document.createElement('div');
+      div.className = 'player-slot ' + (p ? 'filled' : 'empty');
+      div.textContent = p ? p.name : 'Waiting...';
+      grid.appendChild(div);
+    }
+    document.getElementById('playerCount').textContent = `${list.length} / 8 shippers connected`;
+
+    if (myRole === 'facilitator') {
+      document.getElementById('startBtn').disabled = list.length < 2;
+    }
+  });
+  listeners.push({ ref, event: 'value' });
+}
+
+// ── Start Game ─────────────────────────────────────────────
+function startGame() {
+  roomRef.child('phase').set('round1');
+  // Build all crates from player data
+  roomRef.child('players').once('value').then(snap => {
+    const players = snap.val() || {};
+    const allCrates = [];
+    Object.values(players).forEach(p => {
+      if (p.crates) allCrates.push(...p.crates);
+    });
+    roomRef.child('allCrates').set(allCrates);
+    roomRef.child('totalCargo').set(allCrates.reduce((s, c) => s + c.size, 0));
+  });
+}
+
+// ── Game Phase Listener ────────────────────────────────────
+function listenGame() {
+  roomRef.child('phase').on('value', snap => {
+    const phase = snap.val();
+    if (!phase || phase === 'lobby') return;
+    currentPhase = phase;
+
+    // Load game data
+    roomRef.once('value').then(roomSnap => {
+      const room = roomSnap.val();
+      if (!room) return;
+
+      // Update caches
+      allCratesCache = room.allCrates || [];
+      acceptedNestsCache = Object.values(room.acceptedNests || {});
+      const players = room.players || {};
+      Object.values(players).forEach(p => {
+        playerNamesCache[p.index] = p.name;
+        playerNamesCache[p.id] = p.name;
+        playerIdMap[p.index] = p.id;
+        playerIdMap[p.id] = p.index;
+      });
+
+      if (myRole === 'player') {
+        myCrates = allCratesCache.filter(c => c.ownerIndex === myIndex);
+        otherCrates = allCratesCache.filter(c => c.ownerIndex !== myIndex).map(c => ({
+          ...c, ownerName: playerNamesCache[c.ownerIndex] || 'Player ' + c.ownerIndex
+        }));
+      }
+
+      showScreen('game');
+
+      if (phase.endsWith('-results')) {
+        renderResults(room);
+      } else if (phase === 'final') {
+        renderFinal(room);
+      } else {
+        renderRound(room);
+      }
+    });
+  });
+  listeners.push({ ref: roomRef.child('phase'), event: 'value' });
+
+  // Listen for chat
+  roomRef.child('chat').on('child_added', snap => {
+    const msg = snap.val();
+    if (!msg) return;
+    appendChat(msg);
+  });
+  listeners.push({ ref: roomRef.child('chat'), event: 'child_added' });
+
+  // Listen for nesting proposals (player only)
+  if (myRole === 'player') {
+    roomRef.child('nestingProposals').on('child_added', snap => {
+      const p = snap.val();
+      if (!p || p.targetPlayerId !== myId || p.status !== 'pending') return;
+      showNestProposal(p, snap.key);
+    });
+    listeners.push({ ref: roomRef.child('nestingProposals'), event: 'child_added' });
+  }
+
+  // Listen for DMs (player)
+  if (myRole === 'player') {
+    roomRef.child('dms').on('child_added', snap => {
+      const channelId = snap.key;
+      // Only listen to channels involving this player
+      if (!channelId.includes(myId)) return;
+      snap.ref.on('child_added', msgSnap => {
+        const msg = msgSnap.val();
+        if (!msg) return;
+        if (!dmMessages[channelId]) dmMessages[channelId] = [];
+        // Avoid duplicates
+        if (dmMessages[channelId].some(m => m.timestamp === msg.timestamp && m.from === msg.from)) return;
+        dmMessages[channelId].push(msg);
+        const otherId = channelId.replace(myId, '').replace('__', '');
+        if (chatMode !== otherId && msg.fromId !== myId) {
+          unreadDMs[otherId] = (unreadDMs[otherId] || 0) + 1;
+          renderChatTabs();
+        }
+        if (chatMode === otherId || (chatMode === 'group' && false)) {
+          appendChat(msg, true);
+        }
+      });
+    });
+    listeners.push({ ref: roomRef.child('dms'), event: 'child_added' });
+  }
+
+  // Listen for ALL DMs (facilitator can see everything)
+  if (myRole === 'facilitator') {
+    roomRef.child('dms').on('child_added', snap => {
+      snap.ref.on('child_added', msgSnap => {
+        const msg = msgSnap.val();
+        if (!msg) return;
+        appendChat({ ...msg, text: `[DM] ${msg.text}` }, true);
+      });
+    });
+    listeners.push({ ref: roomRef.child('dms'), event: 'child_added' });
+  }
+
+  // Listen for submission count (facilitator)
+  if (myRole === 'facilitator') {
+    roomRef.child('submissions').on('value', snap => {
+      const subs = snap.val() || {};
+      const count = Object.keys(subs).length;
+      roomRef.child('players').once('value').then(ps => {
+        const total = Object.keys(ps.val() || {}).length;
+        document.getElementById('submissionStatus').textContent = `${count}/${total} submitted`;
+      });
+    });
+  }
+}
+
+// ── Render Round ───────────────────────────────────────────
+function renderRound(room) {
+  selectedPriorities = [];
+  const roundNum = currentPhase.replace('round', '');
+  const roundNames = { '1': 'Solo Loading', '2': 'Open Communication', '3': 'Nesting Permitted' };
+
+  document.getElementById('roundBadge').textContent = 'ROUND ' + roundNum;
+  document.getElementById('roundTitle').textContent = roundNames[roundNum] + (myRole === 'facilitator' ? ' — FACILITATOR' : '');
+
+  const instructions = {
+    '1': 'The cargo ship <strong>MV Prosperity</strong> has <strong>85 units</strong> of hold space. You have 3 crates to ship. Tap crates to set loading priority. No communication — you\'re on your own.',
+    '2': 'You can now <strong>communicate</strong> with other shippers via chat. You can see everyone\'s crate sizes and colors — but <strong>not values</strong>. Re-rank your loading priorities.',
+    '3': '<strong>Port Authority Update:</strong> Cargo nesting is now permitted! Same-color crates from different owners can be nested — smaller fits inside larger, using only the larger crate\'s space. You must share crate details with your partner to nest.'
+  };
+  const facilInstr = {
+    '1': '<strong>Round 1:</strong> Players loading independently. No chat. End round when all submit (~2 min).',
+    '2': '<strong>Round 2:</strong> Chat is open. Players see sizes/colors, not values. Watch dynamics. End when ready (~5 min).',
+    '3': '<strong>Round 3:</strong> Nesting enabled. Watch who shares info. End when nesting slows (~5 min).'
+  };
+  document.getElementById('roundInstruction').innerHTML = myRole === 'facilitator' ? facilInstr[roundNum] : instructions[roundNum];
+
+  updateShipBar(0, SHIP_CAPACITY);
+
+  const body = document.getElementById('gameBody');
+  let html = '';
+
+  if (myRole === 'player') {
+    // Player: crate panel
+    html += `<div class="panel"><div class="panel-title">Your Crates — Tap to Set Priority</div>
+      <div class="crate-list" id="crateList"></div>
+      <button class="btn btn-primary mt-10" style="width:100%" id="submitBtn" onclick="submitLoading()" disabled>Submit Loading Order</button>
+      <div id="submitConfirm" class="text-sm text-gray mt-10" style="display:none;">✓ Submitted!</div></div>`;
+
+    if (roundNum === '1') {
+      html += `<div class="panel"><div class="panel-title">Ship Information</div>
+        <p class="text-sm" style="line-height:1.6;">
+          Total cargo: <strong>${room.totalCargo || 123} units</strong><br>
+          Ship capacity: <strong>85 units</strong><br>
+          <span style="color:var(--danger)">Not everything will fit.</span></p></div>`;
+    } else {
+      // Chat panel with Group + DM tabs
+      html += `<div class="panel"><div class="panel-title">Ship Radio</div>
+        <div class="chat-tabs" id="chatTabs"></div>
+        <div class="dm-label" id="dmLabel" style="display:none;"></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Message all shippers..." onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-primary btn-small" onclick="sendChat()">Send</button>
+        </div></div>`;
+    }
+
+    // Cargo Marketplace (R2-R3) — with DM buttons
+    if (roundNum !== '1' && otherCrates.length) {
+      html += `<div class="panel full-panel"><div class="panel-title">Cargo Marketplace — tap a shipper to open private chat</div>
+        <div class="marketplace">`;
+      const byOwner = {};
+      otherCrates.forEach(c => { if (!byOwner[c.ownerIndex]) byOwner[c.ownerIndex] = []; byOwner[c.ownerIndex].push(c); });
+      for (const idx in byOwner) {
+        const ownerId = playerIdMap[idx] || '';
+        html += `<div class="market-card" onclick="switchChatMode('${ownerId}')">
+          <div class="player-name">${byOwner[idx][0].ownerName}</div>`;
+        byOwner[idx].forEach(c => {
+          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div class="crate-color ${c.color}" style="width:14px;height:14px;border-radius:4px;"></div>
+            <span class="text-sm">${c.size} units</span> <span class="text-xs text-gray">${c.color}</span></div>`;
+        });
+        html += `<div class="dm-btn">💬 Private Message</div></div>`;
+      }
+      html += '</div></div>';
+    }
+
+    // Nesting (R3)
+    if (roundNum === '3') html += renderNestingPanel();
+
+  } else {
+    // Facilitator: overview
+    html += `<div class="panel full-panel"><div class="panel-title">All Cargo Overview</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">`;
+    const byOwner = {};
+    allCratesCache.forEach(c => { if (!byOwner[c.ownerIndex]) byOwner[c.ownerIndex] = []; byOwner[c.ownerIndex].push(c); });
+    for (const idx in byOwner) {
+      html += `<div style="background:var(--navy);border-radius:8px;padding:12px;">
+        <div class="text-sm text-gold mb-10">${playerNamesCache[idx] || 'Player ' + (parseInt(idx)+1)}</div>`;
+      byOwner[idx].forEach(c => {
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div class="crate-color ${c.color}" style="width:16px;height:16px;border-radius:4px;"></div>
+          <span class="text-sm">${c.size}u</span>
+          <span class="text-xs text-gold">${c.value}pts</span></div>`;
+      });
+      html += '</div>';
+    }
+    html += '</div></div>';
+
+    if (roundNum !== '1') {
+      html += `<div class="panel full-panel"><div class="panel-title">Chat Monitor (Group + All Private Messages)</div>
+        <div class="chat-messages" id="chatMessages" style="height:300px;"></div></div>`;
+    }
+  }
+
+  body.innerHTML = html;
+  if (myRole === 'player') {
+    renderCrateCards();
+    if (roundNum !== '1') renderChatTabs();
+  }
+  updateFacilBar(roundNum);
+}
+
+function renderCrateCards() {
+  const list = document.getElementById('crateList');
+  if (!list) return;
+  list.innerHTML = '';
+  myCrates.forEach(c => {
+    const isSel = selectedPriorities.includes(c.id);
+    const pri = selectedPriorities.indexOf(c.id) + 1;
+    const isNested = acceptedNestsCache.some(n => n.largeCrateId === c.id || n.smallCrateId === c.id);
+    const div = document.createElement('div');
+    div.className = 'crate-card' + (isSel ? ' selected' : '') + (isNested ? ' nested' : '');
+    div.onclick = () => { togglePriority(c.id); };
+    div.innerHTML = `<div class="crate-color ${c.color}"></div>
+      <div class="crate-info"><div class="size">${c.size} units <span class="text-xs text-gray">(${c.color})</span></div>
+      <div class="value">Value: ${c.value} pts</div>
+      ${isNested ? '<div class="text-xs" style="color:#9b59b6;">🔗 Nested</div>' : ''}</div>
+      ${isSel ? `<div class="crate-priority">${pri}</div>` : '<div class="text-xs text-gray">Tap</div>'}`;
+    list.appendChild(div);
+  });
+  const btn = document.getElementById('submitBtn');
+  if (btn) btn.disabled = selectedPriorities.length === 0;
+}
+
+function togglePriority(id) {
+  const idx = selectedPriorities.indexOf(id);
+  if (idx > -1) selectedPriorities.splice(idx, 1);
+  else selectedPriorities.push(id);
+  renderCrateCards();
+}
+
+function submitLoading() {
+  if (!selectedPriorities.length) return;
+  roomRef.child('submissions/' + myId).set(selectedPriorities);
+  const el = document.getElementById('submitConfirm');
+  if (el) el.style.display = 'block';
+  const btn = document.getElementById('submitBtn');
+  if (btn) btn.textContent = 'Re-submit';
+}
+
+// ── Chat & DM System ──────────────────────────────────────
+function getDmChannelId(id1, id2) {
+  return [id1, id2].sort().join('__');
+}
+
+function renderChatTabs() {
+  const container = document.getElementById('chatTabs');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Group tab
+  const groupTab = document.createElement('div');
+  groupTab.className = 'chat-tab' + (chatMode === 'group' ? ' active' : '');
+  groupTab.textContent = '📢 All';
+  groupTab.onclick = () => switchChatMode('group');
+  container.appendChild(groupTab);
+
+  // Player tabs
+  const players = Object.keys(playerNamesCache).filter(k => {
+    return k.startsWith('u_') && k !== myId;
+  });
+  players.forEach(pid => {
+    const tab = document.createElement('div');
+    tab.className = 'chat-tab' + (chatMode === pid ? ' active' : '');
+    tab.textContent = playerNamesCache[pid] || 'Player';
+    tab.onclick = () => switchChatMode(pid);
+    if (unreadDMs[pid] > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'unread';
+      badge.textContent = unreadDMs[pid];
+      tab.appendChild(badge);
+    }
+    container.appendChild(tab);
+  });
+}
+
+function switchChatMode(mode) {
+  chatMode = mode;
+  unreadDMs[mode] = 0;
+  renderChatTabs();
+
+  const el = document.getElementById('chatMessages');
+  const label = document.getElementById('dmLabel');
+  const input = document.getElementById('chatInput');
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (mode === 'group') {
+    if (label) label.style.display = 'none';
+    if (input) input.placeholder = 'Message all shippers...';
+    // Re-render group messages from Firebase
+    roomRef.child('chat').once('value').then(snap => {
+      const msgs = snap.val() || {};
+      Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp).forEach(m => appendChat(m));
+    });
+  } else {
+    const name = playerNamesCache[mode] || 'Player';
+    if (label) { label.style.display = 'block'; label.textContent = `Private conversation with ${name}`; }
+    if (input) input.placeholder = `Private message to ${name}...`;
+    // Load DM history
+    const channelId = getDmChannelId(myId, mode);
+    const msgs = dmMessages[channelId] || [];
+    msgs.sort((a,b) => a.timestamp - b.timestamp).forEach(m => appendChat(m, true));
+  }
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (chatMode === 'group') {
+    roomRef.child('chat').push({ from: myName || 'Facilitator', text, timestamp: Date.now(), fromId: myId });
+  } else {
+    // Send DM
+    const channelId = getDmChannelId(myId, chatMode);
+    const targetName = playerNamesCache[chatMode] || 'Player';
+    roomRef.child('dms/' + channelId).push({
+      from: myName, fromId: myId,
+      to: targetName, toId: chatMode,
+      text, timestamp: Date.now()
+    });
+    // Show locally immediately
+    appendChat({ from: myName, text, timestamp: Date.now(), fromId: myId }, true);
+  }
+  input.value = '';
+}
+
+function appendChat(msg, isDm) {
+  const el = document.getElementById('chatMessages');
+  if (!el) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  const prefix = isDm && myRole === 'facilitator' ? `<span style="color:#9b59b6;font-size:0.7rem;">[${escapeHtml(msg.from)} → ${escapeHtml(msg.to || '?')}]</span> ` : '';
+  const senderColor = isDm && myRole !== 'facilitator' ? 'color:#9b59b6' : '';
+  div.innerHTML = `${prefix}<span class="sender" style="${senderColor}">${escapeHtml(msg.from)}</span>: <span class="text">${escapeHtml(msg.text)}</span>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Nesting ────────────────────────────────────────────────
+function renderNestingPanel() {
+  const possible = [];
+  myCrates.forEach(mc => {
+    otherCrates.forEach(oc => {
+      if (mc.color === oc.color && mc.size !== oc.size) {
+        const nested = acceptedNestsCache.some(n =>
+          [n.largeCrateId, n.smallCrateId].includes(mc.id) || [n.largeCrateId, n.smallCrateId].includes(oc.id));
+        if (!nested) possible.push({ mine: mc, theirs: oc });
+      }
+    });
+  });
+
+  let html = `<div class="panel full-panel"><div class="panel-title">Nesting Opportunities</div>`;
+  if (!possible.length) {
+    html += '<p class="text-sm text-gray">No nesting opportunities available.</p>';
+  } else {
+    html += '<p class="text-sm text-gray mb-10">Propose nesting — the other shipper must accept. You\'ll share your crate value.</p>';
+    possible.forEach(p => {
+      const savings = Math.min(p.mine.size, p.theirs.size);
+      html += `<div class="nest-pair">
+        <div class="nest-mini-crate"><div class="nest-mini-color crate-color ${p.mine.color}" style="width:14px;height:14px;border-radius:4px;"></div>Yours: ${p.mine.size}u</div>
+        <span class="plus">+</span>
+        <div class="nest-mini-crate"><div class="nest-mini-color crate-color ${p.theirs.color}" style="width:14px;height:14px;border-radius:4px;"></div>${p.theirs.ownerName}: ${p.theirs.size}u</div>
+        <span class="arrow">→ saves ${savings}u</span>
+        <button class="btn btn-primary btn-small" onclick="proposeNest('${p.mine.id}','${p.theirs.id}','${p.theirs.ownerName}')">Propose</button>
+      </div>`;
+    });
+  }
+
+  if (acceptedNestsCache.length) {
+    html += '<div class="mt-20"><div class="panel-title">Accepted Nests</div>';
+    acceptedNestsCache.forEach(n => {
+      html += `<div class="nest-pair" style="border-color:#9b59b6;">
+        <div class="nest-mini-crate">${n.largeCrateId} (${n.largeSize || '?'}u)</div>
+        <span class="plus">🔗</span>
+        <div class="nest-mini-crate">${n.smallCrateId} (${n.smallSize || '?'}u)</div>
+        <span class="saved">✓ Saving ${n.savedSpace}u</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  html += '<div id="nestProposals"></div></div>';
+  return html;
+}
+
+function proposeNest(myCrateId, targetCrateId, targetName) {
+  const mc = myCrates.find(c => c.id === myCrateId);
+  const tc = otherCrates.find(c => c.id === targetCrateId);
+  if (!mc || !tc) return;
+
+  // Find target player ID
+  roomRef.child('players').once('value').then(snap => {
+    const players = snap.val() || {};
+    const targetPlayer = Object.values(players).find(p => p.index === tc.ownerIndex);
+    if (!targetPlayer) return;
+
+    roomRef.child('nestingProposals').push({
+      proposerId: myId, proposerName: myName,
+      myCrateId, myCrate: { size: mc.size, color: mc.color, value: mc.value },
+      targetCrateId,
+      targetCrate: { size: tc.size, color: tc.color },
+      targetPlayerId: targetPlayer.id,
+      status: 'pending'
+    });
+  });
+
+  event.target.disabled = true;
+  event.target.textContent = 'Sent';
+}
+
+function showNestProposal(p, key) {
+  const container = document.getElementById('nestProposals');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'proposal-card';
+  div.id = 'prop-' + key;
+  div.innerHTML = `<h4>🔗 Nesting Proposal from ${p.proposerName}</h4>
+    <p class="text-sm">Their <strong>${p.myCrate.color}</strong> crate (${p.myCrate.size}u, value: <strong>${p.myCrate.value}pts</strong>)
+    + your <strong>${p.targetCrate.color}</strong> crate (${p.targetCrate.size}u).
+    Saves <strong>${Math.min(p.myCrate.size, p.targetCrate.size)}u</strong>.</p>
+    <div class="proposal-actions">
+      <button class="btn btn-primary btn-small" onclick="respondNest('${key}',true)">Accept</button>
+      <button class="btn btn-secondary btn-small" onclick="respondNest('${key}',false)">Decline</button>
+    </div>`;
+  container.appendChild(div);
+}
+
+function respondNest(key, accept) {
+  roomRef.child('nestingProposals/' + key + '/status').set(accept ? 'accepted' : 'rejected');
+
+  if (accept) {
+    roomRef.child('nestingProposals/' + key).once('value').then(snap => {
+      const p = snap.val();
+      if (!p) return;
+      const c1size = p.myCrate.size;
+      const c2size = p.targetCrate.size;
+      const large = c1size > c2size ? p.myCrateId : p.targetCrateId;
+      const small = c1size > c2size ? p.targetCrateId : p.myCrateId;
+      const largeSize = Math.max(c1size, c2size);
+      const smallSize = Math.min(c1size, c2size);
+
+      roomRef.child('acceptedNests').push({
+        largeCrateId: large, smallCrateId: small,
+        largeSize, smallSize,
+        savedSpace: smallSize, color: p.myCrate.color
+      });
+    });
+  }
+
+  const el = document.getElementById('prop-' + key);
+  if (el) el.remove();
+}
+
+// ── End Round / Advance (Facilitator) ──────────────────────
+function endRound() {
+  roomRef.once('value').then(snap => {
+    const room = snap.val();
+    const roundNum = currentPhase.replace('round', '');
+    const submissions = room.submissions || {};
+    const allCrates = room.allCrates || [];
+    const nests = Object.values(room.acceptedNests || {});
+    const players = Object.values(room.players || {});
+
+    // Auto-submit for missing players
+    players.forEach(p => {
+      if (!submissions[p.id]) {
+        submissions[p.id] = (p.crates || []).map(c => c.id);
+      }
+    });
+
+    // Calculate loading
+    const nestedSmall = new Set();
+    nests.forEach(n => nestedSmall.add(n.smallCrateId));
+
+    const buckets = [[], [], []];
+    for (const pid in submissions) {
+      const ids = submissions[pid];
+      if (Array.isArray(ids)) {
+        ids.forEach((id, i) => { if (!buckets[i]) buckets[i] = []; buckets[i].push(id); });
+      }
+    }
+    // Shuffle each bucket
+    buckets.forEach(b => { for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; }});
+
+    const ordered = buckets.flat();
+    let spaceUsed = 0;
+    const loaded = [], bumped = [];
+
+    for (const id of ordered) {
+      const crate = allCrates.find(c => c.id === id);
+      if (!crate) continue;
+      const space = nestedSmall.has(id) ? 0 : crate.size;
+      if (spaceUsed + space <= SHIP_CAPACITY) { spaceUsed += space; loaded.push(id); }
+      else bumped.push(id);
+    }
+
+    // Auto-load nested smalls whose large partner loaded
+    nests.forEach(n => {
+      if (loaded.includes(n.largeCrateId) && !loaded.includes(n.smallCrateId)) {
+        loaded.push(n.smallCrateId);
+        const bi = bumped.indexOf(n.smallCrateId);
+        if (bi > -1) bumped.splice(bi, 1);
+      }
+    });
+
+    // Scores
+    const scores = {};
+    players.forEach(p => {
+      const pCrates = allCrates.filter(c => c.ownerIndex === p.index);
+      let score = 0, allLoaded = true;
+      pCrates.forEach(c => { if (loaded.includes(c.id)) score += c.value; else allLoaded = false; });
+      if (allLoaded) score = Math.round(score * 1.2);
+      scores[p.id] = { score, allLoaded, name: p.name };
+    });
+
+    // Save results and advance to results phase
+    const resultsKey = 'results_round' + roundNum;
+    roomRef.child(resultsKey).set({ loaded, bumped, spaceUsed, scores });
+    roomRef.child('submissions').remove();
+    roomRef.child('phase').set('round' + roundNum + '-results');
+  });
+}
+
+function advanceRound() {
+  const roundNum = currentPhase.replace('round', '').replace('-results', '');
+  const next = { '1': 'round2', '2': 'round3', '3': 'final' }[roundNum];
+  roomRef.child('phase').set(next);
+}
+
+// ── Render Results ─────────────────────────────────────────
+function renderResults(room) {
+  const roundNum = currentPhase.replace('round', '').replace('-results', '');
+  const results = room['results_round' + roundNum] || {};
+
+  document.getElementById('roundBadge').textContent = 'ROUND ' + roundNum + ' RESULTS';
+  document.getElementById('roundTitle').textContent = myRole === 'facilitator' ? 'FACILITATOR' : '';
+  document.getElementById('roundInstruction').innerHTML =
+    `Ship loaded: <strong>${results.spaceUsed || 0} / ${SHIP_CAPACITY} units</strong>. ${(results.loaded||[]).length} crates loaded, ${(results.bumped||[]).length} bumped.`;
+  updateShipBar(results.spaceUsed || 0, SHIP_CAPACITY);
+
+  const body = document.getElementById('gameBody');
+  let html = '';
+
+  if (myRole === 'player') {
+    const myScore = results.scores?.[myId];
+    if (myScore) {
+      document.getElementById('roundInstruction').innerHTML +=
+        ` Your score: <strong>${myScore.score} pts</strong>` +
+        (myScore.allLoaded ? ' <span style="color:var(--success);">(+20% bonus!)</span>' : '');
+    }
+
+    html += '<div class="panel full-panel"><div class="panel-title">Your Crates</div><div class="crate-list">';
+    myCrates.forEach(c => {
+      const isLoaded = (results.loaded || []).includes(c.id);
+      html += `<div class="crate-card ${isLoaded ? 'loaded' : 'bumped'}">
+        <div class="crate-color ${c.color}"></div>
+        <div class="crate-info"><div class="size">${c.size}u (${c.color})</div><div class="value">Value: ${c.value}pts</div></div>
+        <span class="crate-status ${isLoaded ? 'loaded' : 'bumped'}">${isLoaded ? '✓ Loaded' : '✗ Bumped'}</span></div>`;
+    });
+    html += '</div></div>';
+    html += `<div class="panel full-panel text-center"><div class="waiting"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Waiting for captain...</span></div></div>`;
+  } else {
+    // Facilitator: score table
+    html += '<div class="panel full-panel"><div class="panel-title">Scores</div><table class="score-table"><thead><tr><th>Player</th><th>Score</th><th>All Shipped</th></tr></thead><tbody>';
+    const sorted = Object.values(results.scores || {}).sort((a, b) => b.score - a.score);
+    sorted.forEach((s, i) => {
+      html += `<tr${i===0?' class="highlight"':''}>
+        <td>${s.name}</td><td><strong>${s.score}</strong></td>
+        <td>${s.allLoaded ? '<span style="color:var(--success)">✓ Yes (+20%)</span>' : 'No'}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+
+  body.innerHTML = html;
+
+  const nextRound = { '1': '2', '2': '3', '3': 'final' }[roundNum];
+  const nextLabel = nextRound === 'final' ? 'Show Final Results' : 'Start Round ' + nextRound;
+  updateFacilBarResults(nextLabel);
+}
+
+// ── Render Final ───────────────────────────────────────────
+function renderFinal(room) {
+  document.getElementById('roundBadge').textContent = 'VOYAGE COMPLETE';
+  document.getElementById('roundTitle').textContent = '';
+  document.getElementById('roundInstruction').innerHTML = 'The MV Prosperity has completed its voyage.';
+
+  const body = document.getElementById('gameBody');
+  let html = '<div class="panel full-panel"><div class="panel-title">Score Progression</div>';
+  html += '<table class="score-table"><thead><tr><th>Shipper</th><th>R1</th><th>R2</th><th>R3</th><th>Trend</th></tr></thead><tbody>';
+
+  const r1 = room.results_round1?.scores || {};
+  const r2 = room.results_round2?.scores || {};
+  const r3 = room.results_round3?.scores || {};
+
+  const rows = [];
+  for (const pid in r1) {
+    rows.push({
+      name: r1[pid].name || r2[pid]?.name || r3[pid]?.name || '?',
+      s1: r1[pid]?.score || 0, s2: r2[pid]?.score || 0, s3: r3[pid]?.score || 0
+    });
+  }
+  rows.sort((a, b) => b.s3 - a.s3);
+
+  rows.forEach((r, i) => {
+    const diff = r.s3 - r.s1;
+    const trend = diff > 0 ? '📈' : (diff === 0 ? '➡️' : '📉');
+    html += `<tr${i===0?' class="highlight"':''}>
+      <td>${i===0?'🏆 ':''}${r.name}</td>
+      <td>${r.s1}</td><td>${r.s2}</td><td><strong>${r.s3}</strong></td>
+      <td>${trend} ${diff>0?'+':''}${diff}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  const nests = Object.values(room.acceptedNests || {});
+  if (nests.length) {
+    const totalSaved = nests.reduce((s, n) => s + n.savedSpace, 0);
+    html += `<div class="panel full-panel"><div class="panel-title">Nesting Partnerships</div>
+      <p class="text-sm mb-10">${nests.length} deals, <strong>${totalSaved} units</strong> saved.</p>`;
+    nests.forEach(n => {
+      html += `<div class="nest-pair"><div class="nest-mini-crate">${n.largeCrateId}</div>
+        <span class="plus">🔗</span><div class="nest-mini-crate">${n.smallCrateId}</div>
+        <span class="saved">Saved ${n.savedSpace}u</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+  document.getElementById('facilActions').innerHTML = '';
+}
+
+// ── Ship Bar ───────────────────────────────────────────────
+function updateShipBar(used, cap) {
+  const pct = Math.min((used / cap) * 100, 100);
+  const fill = document.getElementById('shipFill');
+  const text = document.getElementById('shipFillText');
+  const stats = document.getElementById('shipStats');
+  if (fill) { fill.style.width = pct + '%'; fill.className = 'ship-fill' + (used > cap ? ' over' : ''); }
+  if (text) text.textContent = Math.round(pct) + '%';
+  if (stats) stats.textContent = used + ' / ' + cap + ' units';
+}
+
+// ── Facilitator Bar ────────────────────────────────────────
+function updateFacilBar(roundNum) {
+  if (myRole !== 'facilitator') return;
+  document.getElementById('facilInfo').textContent = 'Round ' + roundNum;
+  document.getElementById('facilActions').innerHTML =
+    `<button class="btn btn-danger btn-small" onclick="endRound()">End Round ${roundNum}</button>`;
+}
+
+function updateFacilBarResults(nextLabel) {
+  if (myRole !== 'facilitator') return;
+  document.getElementById('facilActions').innerHTML =
+    `<button class="btn btn-primary btn-small" onclick="advanceRound()">${nextLabel}</button>`;
+}
+</script>
+</body>
+</html>
